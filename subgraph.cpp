@@ -43,7 +43,7 @@ int automorphId[MAX_QUERY_NODE];
 
 using namespace std;
 
-subgraph::subgraph(const char* dataGraphFile, const char* queryGraphFile, int count_limit, bool break_auto, int embedding_count){
+subgraph::subgraph(const char* dataGraphFile, const char*   , int count_limit, bool break_auto, int embedding_count){
 	dataGraphFileName = dataGraphFile;
 	queryGraphFileName = queryGraphFile;
 	
@@ -59,7 +59,7 @@ subgraph::subgraph(const char* dataGraphFile, const char* queryGraphFile, int co
 	dataGraph->buildVertexLabelVertexList();
 	//dataGraph->build_sorted_csr();
 
-	queryGraph->buildLabelVertexList(); 
+	queryGraph->buildLabelVertexList();
 	queryGraph->buildVertexLabelVertexList();
 	queryGraph->build_sorted_csr();
 	
@@ -352,7 +352,7 @@ void subgraph::genericQueryProc(){
 			// passes all the filters, add to the list of nodes to be traversed
 			vm.push_back(*startVertexCandidateIterator);
 		}
-		std::cout << "without prune" << vm.size() << std::endl;
+		// std::cout << "without prune" << vm.size() << std::endl;
 	}
 	else{
 		for(int it = 0; it != dataGraph->vert_count; ++it){
@@ -369,7 +369,7 @@ void subgraph::genericQueryProc(){
 			// passes all the filters, add to the list of nodes to be traversed
 			vm.push_back(it);	
 		}
-		std::cout << "without prune" << vm.size() << std::endl;
+		// std::cout << "without prune " << vm.size() << std::endl;
 	}
 
 	// std::cout << "The vm size " << vm.size() << std::endl;

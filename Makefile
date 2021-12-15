@@ -1,4 +1,4 @@
-exe = ceci 
+exe = ceci_origin_v3
 
 cc = "$(shell which g++)" 
 flags = -I. -fopenmp -march=athlon64 -O3 -ggdb
