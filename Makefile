@@ -1,7 +1,8 @@
-exe = ceci_origin_v3
+exe = ceci_origin_omp_n
 
 cc = "$(shell which g++)" 
-flags = -I. -fopenmp -march=athlon64 -O3 -ggdb
+#flags = -I. -fopenmp -march=athlon64 -O3 -ggdb
+flags = -I. -fopenmp -march=native -O3 -ggdb
 #flags = -I. -fopenmp
 
 flags += -std=c++11

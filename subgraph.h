@@ -211,7 +211,7 @@ struct CRI{
 class subgraph{
 	private:
 		// @OpenMP things
-		int num_thrds = 56;
+		int num_thrds = 16;
 		int subregion_count;
 
 		// graph file names

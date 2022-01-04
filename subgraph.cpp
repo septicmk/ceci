@@ -43,7 +43,7 @@ int automorphId[MAX_QUERY_NODE];
 
 using namespace std;
 
-subgraph::subgraph(const char* dataGraphFile, const char*   , int count_limit, bool break_auto, int embedding_count){
+subgraph::subgraph(const char* dataGraphFile, const char* queryGraphFile, int count_limit, bool break_auto, int embedding_count){
 	dataGraphFileName = dataGraphFile;
 	queryGraphFileName = queryGraphFile;
 	
@@ -158,7 +158,7 @@ void subgraph::distributedQueryProc()
 		}
 		// neighborhood label count filter
 		if(!NLCFilter(queryTree[0].vertexId, *startVertexCandidateIterator)){
-			continue;
+			continue; 
 		}
 		// passes all the filters, add to the list of nodes to be traversed
 		vm.push_back(*startVertexCandidateIterator);
@@ -297,7 +297,7 @@ void subgraph::distributedQueryProc()
 			//printf("%d\n", result);
 
 			// send the result back to master and ask for more works
-			MPI_Send(&result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+			MPI_Send(&result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);      
 		}
 	}
 }
