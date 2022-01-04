@@ -6,7 +6,8 @@
 *.lo
 *.o
 *.obj
-
+# swap files
+*.swp
 # Precompiled Headers
 *.gch
 *.pch
