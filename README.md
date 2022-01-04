@@ -8,7 +8,7 @@ Usage
 make
 ./ceci datagraph_path 
 
-**Update Jan. 4, 2022**
+**Update Jan.4, 2022**
 Extract some code from SubgraphMatching framework, which stable with the commandline, which locate in sub_ceci folder.
 Firstly, use `make` to build the project. Then, execute:
 `./myceci -d test/sample_dataset/test_case_1.graph -q test/sample_dataset/query1_positive.graph -filter CECI -order CECI -engine CECI -num MAX`
