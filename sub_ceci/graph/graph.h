@@ -37,8 +37,8 @@ private:
     std::unordered_map<LabelID, ui> labels_frequency_;
 
 #if OPTIMIZED_LABELED_GRAPH == 1
-    ui* labels_offsets_;
-    std::unordered_map<LabelID, ui>* nlf_;
+    ui* labels_offsets_; // offset to do what?
+    std::unordered_map<LabelID, ui>* nlf_; // map label_id, frequency for NLF Filter and check the edge with label info.
 #endif
 
 private:

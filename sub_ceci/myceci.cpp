@@ -9,6 +9,7 @@
 #define INVALID_VERTEX_ID 100000000
 #define NANOSECTOSEC(elapsed_time) ((elapsed_time)/(double)1000000000)
 #define BYTESTOMB(memory_cost) ((memory_cost)/(double)(1024 * 1024))
+#define OPTIMAL_CANDIDATES
 
 VertexID selectCECIStartVertex(const Graph *data_graph, const Graph *query_graph) {
     double min_score = data_graph->getVerticesCount();
@@ -709,6 +710,142 @@ void generateValidCandidates(ui depth, ui *embedding, ui *idx_count, ui **valid_
     idx_count[depth] = valid_candidates_count;
 }
 
+double computeCandidatesFalsePositiveRatio(const Graph *data_graph, const Graph *query_graph, ui **candidates,
+                                                    ui *candidates_count, std::vector<ui> &optimal_candidates_count) {
+    ui query_vertices_count = query_graph->getVerticesCount();
+    ui data_vertices_count = data_graph->getVerticesCount();
+
+    std::vector<std::vector<ui>> candidates_copy(query_vertices_count);
+    for (ui i = 0; i < query_vertices_count; ++i) {
+        candidates_copy[i].resize(candidates_count[i]);
+        std::copy(candidates[i], candidates[i] + candidates_count[i], candidates_copy[i].begin());
+    }
+
+    std::vector<int> flag(data_vertices_count, 0);
+    std::vector<ui> updated_flag;
+    std::vector<double> per_query_vertex_false_positive_ratio(query_vertices_count);
+    optimal_candidates_count.resize(query_vertices_count);
+
+    bool is_steady = false;
+    while (!is_steady) {
+        is_steady = true;
+        for (ui i = 0; i < query_vertices_count; ++i) {
+            ui u = i;
+
+            ui u_nbr_cnt;
+            const ui *u_nbrs = query_graph->getVertexNeighbors(u, u_nbr_cnt);
+
+            ui valid_flag = 0;
+            for (ui j = 0; j < u_nbr_cnt; ++j) {
+                ui u_nbr = u_nbrs[j];
+
+                for (ui k = 0; k < candidates_count[u_nbr]; ++k) {
+                    ui v = candidates_copy[u_nbr][k];
+
+                    if (v == INVALID_VERTEX_ID)
+                        continue;
+
+                    ui v_nbr_cnt;
+                    const ui *v_nbrs = data_graph->getVertexNeighbors(v, v_nbr_cnt);
+
+                    for (ui l = 0; l < v_nbr_cnt; ++l) {
+                        ui v_nbr = v_nbrs[l];
+
+                        if (flag[v_nbr] == valid_flag) {
+                            flag[v_nbr] += 1;
+
+                            if (valid_flag == 0) {
+                                updated_flag.push_back(v_nbr);
+                            }
+                        }
+                    }
+                }
+                valid_flag += 1;
+            }
+
+            for (ui j = 0; j < candidates_count[u]; ++j) {
+                ui v = candidates_copy[u][j];
+
+                if (v == INVALID_VERTEX_ID)
+                    continue;
+
+                if (flag[v] != valid_flag) {
+                    candidates_copy[u][j] = INVALID_VERTEX_ID;
+                    is_steady = false;
+                }
+            }
+
+            for (auto v : updated_flag) {
+                flag[v] = 0;
+            }
+            updated_flag.clear();
+        }
+    }
+
+    double sum = 0;
+    for (ui i = 0; i < query_vertices_count; ++i) {
+        ui u = i;
+        ui negative_count = 0;
+        for (ui j = 0; j < candidates_count[u]; ++j) {
+            ui v = candidates_copy[u][j];
+
+            if (v == INVALID_VERTEX_ID)
+                negative_count += 1;
+        }
+
+        per_query_vertex_false_positive_ratio[u] =
+                (negative_count) / (double) candidates_count[u];
+        sum += per_query_vertex_false_positive_ratio[u];
+        optimal_candidates_count[u] = candidates_count[u] - negative_count;
+    }
+
+    return sum / query_vertices_count;
+}
+
+void printCandidatesInfo(const Graph *query_graph, ui *candidates_count, std::vector<ui> &optimal_candidates_count) {
+    std::vector<std::pair<VertexID, ui>> core_vertices;
+    std::vector<std::pair<VertexID, ui>> tree_vertices;
+    std::vector<std::pair<VertexID, ui>> leaf_vertices;
+
+    ui query_vertices_num = query_graph->getVerticesCount();
+    double sum = 0;
+    double optimal_sum = 0;
+    for (ui i = 0; i < query_vertices_num; ++i) {
+        VertexID cur_vertex = i;
+        ui count = candidates_count[cur_vertex];
+        sum += count;
+        optimal_sum += optimal_candidates_count[cur_vertex];
+
+        if (query_graph->getCoreValue(cur_vertex) > 1) {
+            core_vertices.emplace_back(std::make_pair(cur_vertex, count));
+        }
+        else {
+            if (query_graph->getVertexDegree(cur_vertex) > 1) {
+                tree_vertices.emplace_back(std::make_pair(cur_vertex, count));
+            }
+            else {
+                leaf_vertices.emplace_back(std::make_pair(cur_vertex, count));
+            }
+        }
+    }
+
+    printf("#Candidate Information: CoreVertex(%zu), TreeVertex(%zu), LeafVertex(%zu)\n", core_vertices.size(), tree_vertices.size(), leaf_vertices.size());
+
+    for (auto candidate_info : core_vertices) {
+        printf("CoreVertex %u: %u, %u \n", candidate_info.first, candidate_info.second, optimal_candidates_count[candidate_info.first]);
+    }
+
+    for (auto candidate_info : tree_vertices) {
+        printf("TreeVertex %u: %u, %u\n", candidate_info.first, candidate_info.second, optimal_candidates_count[candidate_info.first]);
+    }
+
+    for (auto candidate_info : leaf_vertices) {
+        printf("LeafVertex %u: %u, %u\n", candidate_info.first, candidate_info.second, optimal_candidates_count[candidate_info.first]);
+    }
+
+    printf("Total #Candidates: %.1lf, %.1lf\n", sum, optimal_sum);
+}
+
 int main(int argc, char** argv) {
     MatchingCommand command(argc, argv);
     std::string input_query_graph_file = command.getQueryGraphFilePath();
@@ -784,12 +921,12 @@ int main(int argc, char** argv) {
 
     ui** candidates = NULL;
     ui* candidates_count = NULL;
-    ui* tso_order = NULL;
-    TreeNode* tso_tree = NULL;
-    ui* cfl_order = NULL;
-    TreeNode* cfl_tree = NULL;
-    ui* dpiso_order = NULL;
-    TreeNode* dpiso_tree = NULL;
+    //ui* tso_order = NULL;
+    //TreeNode* tso_tree = NULL;
+    //ui* cfl_order = NULL;
+    //TreeNode* cfl_tree = NULL;
+    //ui* dpiso_order = NULL;
+    //TreeNode* dpiso_tree = NULL;
     TreeNode* ceci_tree = NULL;
     ui* ceci_order = NULL;
     std::vector<std::unordered_map<VertexID, std::vector<VertexID >>> TE_Candidates;
@@ -811,9 +948,9 @@ int main(int argc, char** argv) {
     // Compute the candidates false positive ratio.
 #ifdef OPTIMAL_CANDIDATES
     std::vector<ui> optimal_candidates_count;
-    double avg_false_positive_ratio = FilterVertices::computeCandidatesFalsePositiveRatio(data_graph, query_graph, candidates,
+    double avg_false_positive_ratio = computeCandidatesFalsePositiveRatio(data_graph, query_graph, candidates,
                                                                                           candidates_count, optimal_candidates_count);
-    FilterVertices::printCandidatesInfo(query_graph, candidates_count, optimal_candidates_count);
+    printCandidatesInfo(query_graph, candidates_count, optimal_candidates_count);
 #endif
     std::cout << "-----" << std::endl;
     std::cout << "Build indices..." << std::endl;
@@ -899,6 +1036,7 @@ int main(int argc, char** argv) {
     end = std::chrono::high_resolution_clock::now();
     double enumeration_time_in_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
+// distribution??
 #ifdef DISTRIBUTION
     std::ofstream outfile (input_distribution_file_path , std::ofstream::binary);
     outfile.write((char*)EvaluateQuery::distribution_count_, sizeof(size_t) * data_graph->getVerticesCount());
@@ -911,12 +1049,12 @@ int main(int argc, char** argv) {
      * Release the allocated memories.
      */
     delete[] candidates_count;
-    delete[] tso_order;
-    delete[] tso_tree;
-    delete[] cfl_order;
-    delete[] cfl_tree;
-    delete[] dpiso_order;
-    delete[] dpiso_tree;
+    // delete[] tso_order;
+    // delete[] tso_tree;
+    // delete[] cfl_order;
+    // delete[] cfl_tree;
+    // delete[] dpiso_order;
+    // delete[] dpiso_tree;
     delete[] ceci_order;
     delete[] ceci_tree;
     delete[] matching_order;

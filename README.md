@@ -1,15 +1,10 @@
-CECI original code.
+CECI work follower.
 Add .gitignore as a filter.
-ceci_origin -- simply build original project.
-ceci -- add `cout` command to print log version.
-ceci_m1 -- the first modified version to cancel the filters: DF(Degree Filter) and NCLF(Neiborhood Count Label Filter)
-
-Usage
-make
-./ceci datagraph_path 
 
 **Update Jan.4, 2022**
-Extract some code from SubgraphMatching framework, which stable with the commandline, which locate in sub_ceci folder.
+Extract some code from SubgraphMatching framework, it's stable with the commandline, which locate in sub_ceci folder.
+
+**Usage**
 Firstly, use `make` to build the project. Then, execute:
 `./myceci -d test/sample_dataset/test_case_1.graph -q test/sample_dataset/query1_positive.graph -filter CECI -order CECI -engine CECI -num MAX`
 Try also, 

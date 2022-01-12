@@ -167,7 +167,7 @@ void Graph::loadGraphFromFile(const std::string &file_path) {
 
 void Graph::printGraphMetaData() {
     std::cout << "|V|: " << vertices_count_ << ", |E|: " << edges_count_ << ", |\u03A3|: " << labels_count_ << std::endl;
-    std::cout << "Max Degree: " << max_degree_ << ", Max Label Frequency: " << max_label_frequency_ << std::endl;
+    std::cout << "Max Degree: " << max_degree_ << ", Max Label Frequency:  " << max_label_frequency_ << std::endl;
 }
 
 void Graph::buildCoreTable() {

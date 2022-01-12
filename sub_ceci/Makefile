@@ -20,4 +20,4 @@ $(exec):$(objs)
 	$(cc) $(objs) -o $(exec) $(flags)
 
 clean:
-	rm -rf $(exec) (objs)
+	rm -rf $(exec) $(objs)
