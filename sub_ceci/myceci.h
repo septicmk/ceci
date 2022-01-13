@@ -22,5 +22,5 @@
     void generateValidCandidates(ui depth, ui *embedding, ui *idx_count, ui **valid_candidates, ui *order,
                                             ui *&temp_buffer, TreeNode *tree,
                                             std::vector<std::unordered_map<VertexID, std::vector<VertexID>>> &TE_Candidates,
-                                            std::vector<std::vector<std::unordered_map<VertexID, std::vector<VertexID>>>> &NTE_Candidates);
+                                            std::vector<std::vector<std::unordered_map<VertexID, std::vector<VertexID>>>> &NTE_Candidates, int max_depth);
     void sortCandidates(ui **candidates, ui *candidates_count, ui num);

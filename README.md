@@ -30,14 +30,14 @@ Try also,
 
 > TO DO LIST>
 >
-> \1. Study the functions of the CECI filter - order - exec process.  
+> 1. Study the functions of the CECI filter - order - exec process.  
 >
-> \2. Try something to reconstruct the code.  
+> 2. Try something to reconstruct the code.  
 >
-> \3. As the input varies from CECI project and SubgraphMatching framework, Write a converter/change the input function of the code.  
+> 3. As the input varies from CECI project and SubgraphMatching framework, Write a converter/change the input function of the code.  
 
 
 
 > Other things  
 >
-> \1. BTW, also find other datasets on SNAP, while the formats doesn't compatible with the CECI input. 
+> 1. BTW, also find other datasets on SNAP, while the formats doesn't compatible with the CECI input. 

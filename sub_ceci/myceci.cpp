@@ -10,6 +10,7 @@
 #define NANOSECTOSEC(elapsed_time) ((elapsed_time)/(double)1000000000)
 #define BYTESTOMB(memory_cost) ((memory_cost)/(double)(1024 * 1024))
 #define OPTIMAL_CANDIDATES
+// #define DISTRIBUTION // bug to fix
 
 VertexID selectCECIStartVertex(const Graph *data_graph, const Graph *query_graph) {
     double min_score = data_graph->getVerticesCount();
@@ -18,7 +19,7 @@ VertexID selectCECIStartVertex(const Graph *data_graph, const Graph *query_graph
     for (ui i = 0; i < query_graph->getVerticesCount(); ++i) {
         ui degree = query_graph->getVertexDegree(i);
         ui count = 0;
-        computeCandidateWithNLF(data_graph, query_graph, i, count);
+        computeCandidateWithNLF(data_graph, query_graph, i, count); // just used for find candidates, but has heavy filter(s).
         double cur_score = count / (double)degree;
         if (cur_score < min_score) {
             min_score = cur_score;
@@ -118,33 +119,36 @@ void allocateBuffer(const Graph *data_graph, const Graph *query_graph, ui **&can
 
 void computeCandidateWithNLF(const Graph *data_graph, const Graph *query_graph, VertexID query_vertex,
                                                ui &count, ui *buffer) {
-    LabelID label = query_graph->getVertexLabel(query_vertex);
+    LabelID label = query_graph->getVertexLabel(query_vertex); 
     ui degree = query_graph->getVertexDegree(query_vertex);
 #if OPTIMIZED_LABELED_GRAPH == 1
-    const std::unordered_map<LabelID, ui>* query_vertex_nlf = query_graph->getVertexNLF(query_vertex);
+    const std::unordered_map<LabelID, ui>* query_vertex_nlf = query_graph->getVertexNLF(query_vertex); // see getvertexNLF
 #endif
     ui data_vertex_num;
-    const ui* data_vertices = data_graph->getVerticesByLabel(label, data_vertex_num);
+    const ui* data_vertices = data_graph->getVerticesByLabel(label, data_vertex_num); // return what? // extract label vertex [Label Filter]
     count = 0;
     for (ui j = 0; j < data_vertex_num; ++j) {
         ui data_vertex = data_vertices[j];
+        // match label(in data_vertices) and degree( deg(data_vertex) >= deg(query_vertex) ) in data_graph [Degree Filter]
         if (data_graph->getVertexDegree(data_vertex) >= degree) {
 
             // NFL check
 #if OPTIMIZED_LABELED_GRAPH == 1
             const std::unordered_map<LabelID, ui>* data_vertex_nlf = data_graph->getVertexNLF(data_vertex);
-
+            // check the number of types of data_vertex, have to satisfy dv_nlf >= qv_nlf [NLCF Filter]
+            // only guarantee the number of types
             if (data_vertex_nlf->size() >= query_vertex_nlf->size()) {
                 bool is_valid = true;
 
                 for (auto element : *query_vertex_nlf) {
-                    auto iter = data_vertex_nlf->find(element.first);
+                    auto iter = data_vertex_nlf->find(element.first); // find every qv_nlf in dv_nlf return an Iterator
+                    // candidates' neighbor(s) are exist, and enough 
                     if (iter == data_vertex_nlf->end() || iter->second < element.second) {
                         is_valid = false;
                         break;
                     }
                 }
-
+                // count records the number of filtered vertices, then store it if a buffer has been assigned.
                 if (is_valid) {
                     if (buffer != NULL) {
                         buffer[count] = data_vertex;
@@ -153,6 +157,7 @@ void computeCandidateWithNLF(const Graph *data_graph, const Graph *query_graph, 
                 }
             }
 #else
+            // only Label Filter and Degree Filter
             if (buffer != NULL) {
                 buffer[count] = data_vertex;
             }
@@ -213,6 +218,7 @@ bool CECIFilter(const Graph *data_graph, const Graph *query_graph, ui **&candida
 
         ui u_label = query_graph->getVertexLabel(u);
         ui u_degree = query_graph->getVertexDegree(u);
+        // the differences between NLF and check the edge with Neighbor Info
 #if OPTIMIZED_LABELED_GRAPH == 1
         const std::unordered_map<LabelID, ui>* u_nlf = query_graph->getVertexNLF(u);
 #endif
@@ -615,7 +621,7 @@ size_t exploreCECIStyle(const Graph *data_graph, const Graph *query_graph, TreeN
                 idx[cur_depth] = 0;
                 generateValidCandidates(cur_depth, embedding, idx_count, valid_candidates, order, temp_buffer, tree,
                                         TE_Candidates,
-                                        NTE_Candidates);
+                                        NTE_Candidates, max_depth);
 #ifdef ENABLE_FAILING_SET
                 if (idx_count[cur_depth] == 0) {
                     vec_failing_set[cur_depth - 1] = ancestors[order[cur_depth]];
@@ -664,7 +670,7 @@ size_t exploreCECIStyle(const Graph *data_graph, const Graph *query_graph, TreeN
 void generateValidCandidates(ui depth, ui *embedding, ui *idx_count, ui **valid_candidates, ui *order,
                                             ui *&temp_buffer, TreeNode *tree,
                                             std::vector<std::unordered_map<VertexID, std::vector<VertexID>>> &TE_Candidates,
-                                            std::vector<std::vector<std::unordered_map<VertexID, std::vector<VertexID>>>> &NTE_Candidates) {
+                                            std::vector<std::vector<std::unordered_map<VertexID, std::vector<VertexID>>>> &NTE_Candidates, int max_depth) {
 
     VertexID u = order[depth];
     TreeNode &u_node = tree[u];
@@ -705,9 +711,16 @@ void generateValidCandidates(ui depth, ui *embedding, ui *idx_count, ui **valid_
 
         std::swap(temp_buffer, valid_candidates[depth]);
         valid_candidates_count = temp_count;
+        
     }
-
     idx_count[depth] = valid_candidates_count;
+
+    std::cout << "idx_count info in depth " << depth << std::endl;
+    for (int i = 0; i < max_depth; i++){
+        std::cout << idx_count[i] << " ";
+    }
+    std::cout << std::endl;
+    // std::cout << "valid_candidates_count in depth " << depth << " is " << valid_candidates_count << std::endl;
 }
 
 double computeCandidatesFalsePositiveRatio(const Graph *data_graph, const Graph *query_graph, ui **candidates,
@@ -950,6 +963,7 @@ int main(int argc, char** argv) {
     std::vector<ui> optimal_candidates_count;
     double avg_false_positive_ratio = computeCandidatesFalsePositiveRatio(data_graph, query_graph, candidates,
                                                                                           candidates_count, optimal_candidates_count);
+    std::cout << "avg_false_positive_ratio " << avg_false_positive_ratio << std::endl;
     printCandidatesInfo(query_graph, candidates_count, optimal_candidates_count);
 #endif
     std::cout << "-----" << std::endl;
