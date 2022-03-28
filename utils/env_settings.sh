@@ -30,7 +30,7 @@ function env-activate {
     export _ENV_OLD_PATH=$PATH
     export _ENV_OLD_LIBPATH=$LIBRARY_PATH
     export _ENV_OLD_LDLIBPATH=$LD_LIBRARY_PATH
-
+    # add more sys parameters here
     # activation
     
 
@@ -40,6 +40,7 @@ function env-deactivate {
     echo "-- Deactivating shell env in $env_path --"
     deactivate
     unset _ENV_CURRENT
+    # add more sys parameters here
     export PATH=$_ENV_OLD_PATH
     export LIBRARY_PATH=$_ENV_OLD_LIBPATH
     export LD_LIBRARY_PATH=$_ENV_OLD_LDLIBPATH
